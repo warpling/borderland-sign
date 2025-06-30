@@ -1,0 +1,68 @@
+<!-- index.html -->
+<!doctype html>
+<meta charset="utf-8" />
+<title>Sign stats</title>
+
+<h1 id="msg">Loading…</h1>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onDisconnect, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getFirestore, doc, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = { /* ← paste the snippet from step 2 */ };
+const app      = initializeApp(firebaseConfig);
+const rtdb     = getDatabase(app);
+const store    = getFirestore(app);
+const h1       = document.getElementById("msg");
+
+const SID      = crypto.randomUUID();          // one-time session id
+const PRESENCE = 30_000;                       // ms the user counts as “online”
+
+/* ---------- presence (Realtime DB) ---------- */
+const presRef  = ref(rtdb, `status/${SID}`);
+set(presRef, { ts: Date.now() });
+onDisconnect(presRef).remove();
+// keep the key alive
+setInterval(() => set(presRef, { ts: Date.now() }), PRESENCE - 5_000);
+
+// live count of children under /status
+let online = 0;
+onValue(ref(rtdb, "status"), snap => {
+  online = snap.size || snap.numChildren();    // size if you’re on v11
+  render();
+});
+
+/* ---------- totals + lastSeen (Firestore) ---------- */
+const statDoc = doc(store, "stats/global");
+let total = 0, lastSeen = 0;
+
+// atomically bump counters once per visit
+await runTransaction(store, async tx => {
+  const s  = await tx.get(statDoc);
+  const d  = s.exists() ? s.data() : { total: 0, lastSeen: 0 };
+  total    = d.total + 1;
+  lastSeen = Date.now();
+  tx.set(statDoc, { total, lastSeen });
+});
+
+// stay synced with anyone else updating it
+onSnapshot(statDoc, snap => {
+  ({ total, lastSeen } = snap.data());
+  render();
+});
+
+/* ---------- view ---------- */
+function minutesAgo(t) {
+  const m = Math.floor((Date.now() - t) / 60_000);
+  return `${m} minute${m !== 1 ? "s" : ""} ago`;
+}
+function render() {
+  if (!h1) return;
+  if (online > 1) {
+    h1.textContent = `${online} people are looking at this instead of experiencing literally everything.`;
+  } else {
+    h1.textContent = `The last person to scan this sign was here ${minutesAgo(lastSeen)}. ${total} people have scanned the sign.`;
+  }
+}
+</script>
