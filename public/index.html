@@ -2,34 +2,45 @@
 <meta charset="utf-8" />
 <title>QR-Sign Stats</title>
 
-<h1 id="msg">Your internet is very slow!</br>Good for you!</h1>
+<h1 id="msg">Your internet is very slow!<br>Good for you!</h1>
 
 <script type="module">
+/* -------------------------------------------------- */
+/* 1.  IMPORTS                                        */
+/* -------------------------------------------------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onDisconnect, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import { initializeFirestore, getFirestore, doc, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  initializeFirestore,       //  added this import
+  getFirestore,
+  doc, runTransaction, onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-/*  ← paste your own config object from the console */
+/* -------------------------------------------------- */
+/* 2.  CONFIG & APP INITIALISATION                    */
+/* -------------------------------------------------- */
 const firebaseConfig = {
-  apiKey: "…",
-  authDomain: "borderland-qr.firebaseapp.com",
-  projectId: "borderland-qr",
-  databaseURL: "https://borderland-qr-default-rtdb.europe-west1.firebasedatabase.app",
+  apiKey:          "…",
+  authDomain:      "borderland-qr.firebaseapp.com",
+  projectId:       "borderland-qr",
+  databaseURL:     "https://borderland-qr-default-rtdb.europe-west1.firebasedatabase.app"
 };
 
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);                               // keep a handle
+initializeFirestore(app, { experimentalForceLongPolling: true });        // Safari-friendly
 
-/* force the SDK to fall back to long-polling, which Safari allows */
-initializeFirestore(app, { experimentalForceLongPolling: true });
+/* -------------------------------------------------- */
+/* 3.  REFERENCES                                     */
+/* -------------------------------------------------- */
+const db   = getDatabase(app);
+const fs   = getFirestore(app);
+const msg  = document.getElementById("msg");
+const id   = crypto.randomUUID();
+const TTL  = 30_000;        // ms counted as “online”
 
-
-const db  = getDatabase();
-const fs  = getFirestore();
-const msg = document.getElementById("msg");
-const id  = crypto.randomUUID();
-const TTL = 30_000;                        // ms counted as “online”
-
-/* ---- presence in Realtime DB ---- */
+/* -------------------------------------------------- */
+/* 4.  PRESENCE (Realtime DB)                         */
+/* -------------------------------------------------- */
 const presRef = ref(db, `status/${id}`);
 set(presRef, { ts: Date.now() });
 onDisconnect(presRef).remove();
@@ -37,11 +48,13 @@ setInterval(() => set(presRef, { ts: Date.now() }), TTL - 5_000);
 
 let online = 0;
 onValue(ref(db, "status"), snap => {
-  online = snap.size || snap.numChildren();
+  online = snap.exists() ? snap.numChildren() : 0;    // robust count
   render();
 });
 
-/* ---- totals + lastSeen in Firestore ---- */
+/* -------------------------------------------------- */
+/* 5.  TOTALS + LAST SEEN (Firestore)                 */
+/* -------------------------------------------------- */
 const statDoc = doc(fs, "stats/global");
 let total = 0, lastSeen = 0;
 
@@ -52,13 +65,16 @@ await runTransaction(fs, async tx => {
   lastSeen = Date.now();
   tx.set(statDoc, { total, lastSeen });
 });
-render(); // show counts immediately
+render();                              // immediate paint
+
 onSnapshot(statDoc, snap => {
   ({ total, lastSeen } = snap.data());
   render();
 });
 
-/* ---- view ---- */
+/* -------------------------------------------------- */
+/* 6.  RENDER                                         */
+/* -------------------------------------------------- */
 function minsAgo(t) {
   const m = Math.floor((Date.now() - t) / 60_000);
   return `${m} minute${m !== 1 ? "s" : ""} ago`;
@@ -80,7 +96,9 @@ function render() {
   }
 }
 
-/* optional: a little emphasis for the numbers */
+/* -------------------------------------------------- */
+/* 7.  STYLE                                          */
+/* -------------------------------------------------- */
 const style = document.createElement('style');
 style.textContent = `
   .big { font-size: 1.25em; font-weight: 700; }
