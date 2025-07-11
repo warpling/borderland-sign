@@ -75,8 +75,10 @@ onSnapshot(statDoc, snap => {
 /* -------------------------------------------------- */
 /* 6.  RENDER                                         */
 /* -------------------------------------------------- */
-function minsAgo(t) {
-  const m = Math.floor((Date.now() - t) / 60_000);
+function agoText(t) {
+  const diff = Date.now() - t;
+  if (diff < 60_000) return "a few seconds ago";      // < 1 min
+  const m = Math.floor(diff / 60_000);
   return `${m} minute${m !== 1 ? "s" : ""} ago`;
 }
 
@@ -89,7 +91,7 @@ function render() {
   } else {
     msg.innerHTML = `
       The last person curious enough to scan this sign was here<br>
-      ${minsAgo(lastSeen)}.<br>
+      ${agoText(lastSeen)}.<br>
       <span class="big">${total}</span> people have scanned the sign.<br>
       Now please put your phone back on airplane mode.
     `;
