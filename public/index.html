@@ -16,7 +16,12 @@ const firebaseConfig = {
   projectId: "borderland-qr",
   databaseURL: "https://borderland-qr-default-rtdb.europe-west1.firebasedatabase.app",
 };
+
 initializeApp(firebaseConfig);
+
+/* force the SDK to fall back to long-polling, which Safari allows */
+initializeFirestore(app, { experimentalForceLongPolling: true });
+
 
 const db  = getDatabase();
 const fs  = getFirestore();
@@ -47,6 +52,7 @@ await runTransaction(fs, async tx => {
   lastSeen = Date.now();
   tx.set(statDoc, { total, lastSeen });
 });
+render(); // show counts immediately
 onSnapshot(statDoc, snap => {
   ({ total, lastSeen } = snap.data());
   render();
@@ -57,11 +63,28 @@ function minsAgo(t) {
   const m = Math.floor((Date.now() - t) / 60_000);
   return `${m} minute${m !== 1 ? "s" : ""} ago`;
 }
+
 function render() {
   if (online > 1) {
-    h1.textContent = `${online} people are looking at this instead of experiencing literally everything.\n`;
+    msg.innerHTML = `
+      <span class="big">${online}</span> people are looking at this<br>
+      instead of experiencing literally everything.
+    `;
   } else {
-    h1.textContent = `The last person curious enough to scan this sign was here ${minsAgo(lastSeen)}. ${total} people have scanned the sign.\nNow please put your phone back on airplane mode.`;
+    msg.innerHTML = `
+      The last person curious enough to scan this sign was here<br>
+      ${minsAgo(lastSeen)}.<br>
+      <span class="big">${total}</span> people have scanned the sign.<br>
+      Now please put your phone back on airplane mode.
+    `;
   }
 }
+
+/* optional: a little emphasis for the numbers */
+const style = document.createElement('style');
+style.textContent = `
+  .big { font-size: 1.25em; font-weight: 700; }
+  h1   { text-align: center; line-height: 1.4; }
+`;
+document.head.append(style);
 </script>
