@@ -7,7 +7,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onDisconnect, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import { getFirestore, doc, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeFirestore, getFirestore, doc, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 /*  ← paste your own config object from the console */
 const firebaseConfig = {
@@ -17,7 +17,7 @@ const firebaseConfig = {
   databaseURL: "https://borderland-qr-default-rtdb.europe-west1.firebasedatabase.app",
 };
 
-initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 
 /* force the SDK to fall back to long-polling, which Safari allows */
 initializeFirestore(app, { experimentalForceLongPolling: true });
@@ -25,7 +25,7 @@ initializeFirestore(app, { experimentalForceLongPolling: true });
 
 const db  = getDatabase();
 const fs  = getFirestore();
-const h1  = document.getElementById("msg");
+const msg = document.getElementById("msg");
 const id  = crypto.randomUUID();
 const TTL = 30_000;                        // ms counted as “online”
 
