@@ -85,15 +85,15 @@ function agoText(t) {
 function render() {
   if (online > 1) {
     msg.innerHTML = `
-      <span class="big">${online}</span> people are looking at this<br>
-      instead of experiencing literally everything.
+      <span class="big">${online}</span> human beings are looking at this<br>
+      instead of being present and experiencing the grandness of it all.
     `;
   } else {
     msg.innerHTML = `
-      The last person curious enough to scan this sign was here<br>
+      The last overly curious person who scaned this sign was here<br>
       ${agoText(lastSeen)}.<br>
       <span class="big">${total}</span> people have scanned the sign.<br>
-      Now please put your phone back on airplane mode.
+      Now <i>please</i> put your phone back on airplane mode.
     `;
   }
 }
@@ -103,8 +103,8 @@ function render() {
 /* -------------------------------------------------- */
 const style = document.createElement('style');
 style.textContent = `
-  .big { font-size: 1.25em; font-weight: 700; }
-  h1   { text-align: center; line-height: 1.4; }
+  .big { font-size: 2em; font-weight: 700; text-color: white; }
+  h1   { text-align: center; line-height: 1.4; background-color: black; }
 `;
 document.head.append(style);
 </script>
